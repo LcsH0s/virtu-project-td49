@@ -1,7 +1,8 @@
 .PHONY: pre-run build create start
 
 # Pre-Run
-pre-run: create-networks create-volumes build
+# TODO: ajouter create-networks a la fin
+pre-run: create-volumes build create start
 
 create-networks: check-front-tier check-back-tier check-cats-or-dogs-network
 
@@ -44,8 +45,10 @@ create: cleanup create-vote create-db create-redis create-result create-worker
 
 cleanup:
 		docker rm -f vote db redis seed-data result worker || true
+		docker volume rm db-data
 
 create-vote:
+		docker rm vote || true
 		docker create --name vote -v "/root/virtu-project-td49/src/vote:/usr/local/app" -p 5002:80 --network=cats-or-dogs-network vote
 
 create-db:
@@ -85,54 +88,15 @@ create-worker:
 		docker create \
 				--network=cats-or-dogs-network \
 				--name worker \
-				result:latest
+				worker:latest
 
-run-vote:
-		docker rm vote
-		docker run --name vote -v "/root/virtu-project-td49/src/vote:/usr/local/app" -p 5002:80 --network=cats-or-dogs-network vote
-
-run-db:
-		docker rm db
+run-seed-data:
+		docker rm seed-data || true
 		docker run \
 				--network=cats-or-dogs-network \
-				--name db \
-				-v db-data:/var/lib/postgresql/data \
-				-v "/root/virtu-project-td49/src/healthchecks:/healthchecks" \
-				--health-cmd="/healthchecks/postgres.sh" \
-				--health-interval="5s" \
-				-e POSTGRES_PASSWORD=postgres \
-				-p 5432:5432 \
-				postgres:15-alpine
+				--name seed-data \
+				seed-data:latest
 
-run-redis:
-		docker rm redis
-		docker run \
-				--network=cats-or-dogs-network \
-				--name redis \
-				-v "/root/virtu-project-td49/src/healthchecks:/healthchecks" \
-				--health-cmd="/healthchecks/redis.sh" \
-				--health-interval="5s" \
-				-p 6379:6379 \
-				redis
-
-run-result:
-	docker rm result
-		docker run \
-				--name result \
-				--health-cmd="curl -f http://localhost/ || exit 1" \
-				--health-interval="30s" \
-				-v /root/virtu-project-td49/src/result:/usr/local/app \
-				-p 5001:80 \
-				-p 127.0.0.1:9229:9229 \
-				--network=cats-or-dogs-network \
-				result:latest
-
-run-worker:
-		docker rm worker
-		docker run \
-				--network=cats-or-dogs-network \
-				--name worker \
-				result:latest
 
 # Starting the containers
 start: start-vote start-db start-redis start-worker start-result
