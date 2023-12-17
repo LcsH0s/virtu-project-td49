@@ -18,7 +18,7 @@ io.on('connection', function (socket) {
 });
 
 var pool = new Pool({
-  connectionString: 'postgres://postgres:postgres@192.168.1.213/postgres'
+  connectionString: 'postgres://postgres:postgres@172.20.0.3/postgres'
 });
 
 async.retry(
@@ -27,7 +27,6 @@ async.retry(
     pool.connect(function(err, client, done) {
       if (err) {
         console.error("Waiting for db");
-	console.error(err);
       }
       callback(err, client);
     });

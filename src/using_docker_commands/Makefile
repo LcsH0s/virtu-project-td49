@@ -1,35 +1,12 @@
+CWD := $(shell pwd)
+
 .PHONY: pre-run build create start
 
 # Pre-Run
-# TODO: ajouter create-networks a la fin
-pre-run: create-volumes build create start
+all: create-volumes create-networks build run
 
-create-networks: check-front-tier check-back-tier check-cats-or-dogs-network
-
-check-front-tier:
-		@if [ -z "$$(docker network ls --filter name=front-tier -q)" ]; then \
-				echo "Creating Docker network: front-tier"; \
-				docker network create --driver=bridge front-tier --subnet=172.19.0.0/24; \
-		else \
-				echo "Docker network front-tier already exists"; \
-		fi
-
-check-back-tier:
-		@if [ -z "$$(docker network ls --filter name=back-tier -q)" ]; then \
-				echo "Creating Docker network: back-tier"; \
-				docker network create --driver=bridge back-tier --subnet=172.19.1.0/24; \
-		else \
-				echo "Docker network back-tier already exists"; \
-		fi
-
-check-cats-or-dogs-network:
-		@if [ -z "$$(docker network ls --filter name=cats-or-dogs-network -q)" ]; then \
-				echo "Creating Docker network: cats-or-dogs-network"; \
-				docker network create --driver=bridge cats-or-dogs-network --subnet=172.19.2.0/24; \
-		else \
-				echo "Docker network cats-or-dogs-network already exists"; \
-		fi
-
+create-networks:
+		docker network create --driver=bridge cats-or-dogs-network --subnet=172.20.0.0/24 || true
 
 create-volumes:
 		docker volume create db-data
@@ -41,60 +18,82 @@ build:
 		docker build -t worker:latest ./worker/
 
 # Creating the containers
-create: cleanup create-vote create-db create-redis create-result create-worker
+run: run-vote run-db run-redis run-result run-worker run-seed-data
 
 cleanup:
 		docker rm -f vote db redis seed-data result worker || true
-		docker volume rm db-data
+		docker volume rm db-data || true
+		docker network rm cats-or-dogs-network || true
 
-create-vote:
+run-vote:
 		docker rm vote || true
-		docker create --name vote -v "/root/virtu-project-td49/src/vote:/usr/local/app" -p 5002:80 --network=cats-or-dogs-network vote
-
-create-db:
-		docker create \
+		docker run \
 				--network=cats-or-dogs-network \
+				--ip 172.20.0.2 \
+				--name vote \
+				-v "$(CWD)/vote:/usr/local/app" \
+				-p 5002:80 \
+				-d \
+				vote
+
+run-db:
+		docker rm db || true
+		docker run \
+				--network=cats-or-dogs-network \
+				--ip 172.20.0.3 \
 				--name db \
 				-v db-data:/var/lib/postgresql/data \
-				-v "/root/virtu-project-td49/src/healthchecks:/healthchecks" \
+				-v "$(CWD)/healthchecks:/healthchecks" \
 				--health-cmd="/healthchecks/postgres.sh" \
 				--health-interval="5s" \
 				-e POSTGRES_PASSWORD=postgres \
 				-p 5432:5432 \
+				-d \
 				postgres:15-alpine
 
-create-redis:
-		docker create \
+run-redis:
+		docker rm redis || true
+		docker run \
 				--network=cats-or-dogs-network \
+				--ip 172.20.0.4 \
 				--name redis \
-				-v "/root/virtu-project-td49/src/healthchecks:/healthchecks" \
+				-v "$(CWD)/healthchecks:/healthchecks" \
 				--health-cmd="/healthchecks/redis.sh" \
 				--health-interval="5s" \
 				-p 6379:6379 \
+				-d \
 				redis
 
-create-result:
-		docker create \
+run-result:
+		docker rm result || true
+		docker run \
+				--network=cats-or-dogs-network \
+				--ip 172.20.0.5 \
 				--name result \
 				--health-cmd="curl -f http://localhost/ || exit 1" \
 				--health-interval="30s" \
-				-v /root/virtu-project-td49/src/result:/usr/local/app \
 				-p 5001:80 \
 				-p 127.0.0.1:9229:9229 \
-				--network=cats-or-dogs-network \
+				-d \
 				result:latest
 
-create-worker:
-		docker create \
+run-worker:
+		docker rm worker || true
+		docker run \
 				--network=cats-or-dogs-network \
+				--ip 172.20.0.6 \
 				--name worker \
+				-d \
 				worker:latest
 
 run-seed-data:
 		docker rm seed-data || true
+		sleep 2
 		docker run \
 				--network=cats-or-dogs-network \
+				--ip 172.20.0.7 \
 				--name seed-data \
+				-d \
 				seed-data:latest
 
 

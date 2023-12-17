@@ -21,4 +21,5 @@ COPY . .
 ENV PORT 80
 EXPOSE 80
 
-ENTRYPOINT ["nodemon", "--inspect=0.0.0.0", "server.js"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "server.js"]

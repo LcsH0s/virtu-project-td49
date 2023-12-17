@@ -17,7 +17,7 @@ namespace Worker
             Console.Error.WriteLine("COMMAND EXECUTED 3");
             try
             {
-                var pgsql = OpenDbConnection("Server=192.168.1.213;Username=postgres;Password=postgres;");                var redisConn = OpenRedisConnection("redis");
+                var pgsql = OpenDbConnection("Server=172.20.0.3;Username=postgres;Password=postgres;");                var redisConn = OpenRedisConnection("redis");
                 var redis = redisConn.GetDatabase();
 
                 // Keep alive is not implemented in Npgsql yet. This workaround was recommended:
@@ -46,7 +46,7 @@ namespace Worker
                         if (!pgsql.State.Equals(System.Data.ConnectionState.Open))
                         {
                             Console.WriteLine("Reconnecting DB");
-                            pgsql = OpenDbConnection("Server=db;Username=postgres;Password=postgres;");
+                            pgsql = OpenDbConnection("Server=172.20.0.3;Username=postgres;Password=postgres;");
                         }
                         else
                         { // Normal +1 vote requested
@@ -109,7 +109,7 @@ namespace Worker
         private static ConnectionMultiplexer OpenRedisConnection(string hostname)
         {
             // Use IP address to workaround https://github.com/StackExchange/StackExchange.Redis/issues/410
-            var ipAddress = "192.168.1.213";
+            var ipAddress = "172.20.0.4";
             Console.WriteLine($"Found redis at {ipAddress}");
 
             while (true)
