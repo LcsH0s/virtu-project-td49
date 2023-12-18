@@ -2,6 +2,7 @@ version: '2'
 
 services:
   vote:
+    image: samlotus/virtu-vote:comp
     build: ./vote/
     ports:
       - "5002:80"
@@ -21,6 +22,7 @@ services:
       start_period: 10s
 
   result:
+    image: samlotus/virtu-result:comp
     build: ./result/
     entrypoint: nodemon --inspect=0.0.0.0 server.js
     depends_on:
@@ -36,6 +38,7 @@ services:
       - back-tier
 
   worker:
+    image: samlotus/virtu-worker:comp
     build: ./worker/
     depends_on:
       redis:
@@ -70,6 +73,7 @@ services:
       - back-tier
 
   seed-data:
+    image: samlotus/virtu-seed-data:comp
     build: ./seed-data/
     depends_on:
       vote:
