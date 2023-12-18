@@ -1,9 +1,9 @@
 CWD := $(shell pwd)
 
-.PHONY: pre-run build create start
+.PHONY: pre-run build start run
 
 # Pre-Run
-all: create-volumes create-networks build run
+all: create-volumes create-networks build 
 
 create-networks:
 		docker network create --driver=bridge cats-or-dogs-network --subnet=172.20.0.0/24 || true
