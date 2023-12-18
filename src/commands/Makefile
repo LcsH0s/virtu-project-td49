@@ -12,18 +12,13 @@ create-volumes:
 		docker volume create db-data
 
 build:
-		docker build -t vote:latest ./vote/
-		docker build -t seed-data:latest ./seed-data/
-		docker build -t result:latest ./result/
-		docker build -t worker:latest ./worker/
+		docker build -t samlotus/virtu-vote:cmd ./vote/
+		docker build -t samlotus/virtu-seed-data:cmd ./seed-data/
+		docker build -t samlotus/virtu-result:cmd ./result/
+		docker build -t samlotus/virtu-worker:cmd ./worker/
 
 # Creating the containers
 run: run-vote run-db run-redis run-result run-worker run-seed-data
-
-cleanup:
-		docker rm -f vote db redis seed-data result worker || true
-		docker volume rm db-data || true
-		docker network rm cats-or-dogs-network || true
 
 run-vote:
 		docker rm vote || true
@@ -34,7 +29,7 @@ run-vote:
 				-v "$(CWD)/vote:/usr/local/app" \
 				-p 5002:80 \
 				-d \
-				vote
+				samlotus/virtu-vote:cmd
 
 run-db:
 		docker rm db || true
@@ -75,7 +70,7 @@ run-result:
 				-p 5001:80 \
 				-p 127.0.0.1:9229:9229 \
 				-d \
-				result:latest
+				samlotus/virtu-result:cmd
 
 run-worker:
 		docker rm worker || true
@@ -84,7 +79,7 @@ run-worker:
 				--ip 172.20.0.6 \
 				--name worker \
 				-d \
-				worker:latest
+				samlotus/virtu-worker:cmd
 
 run-seed-data:
 		docker rm seed-data || true
@@ -94,27 +89,12 @@ run-seed-data:
 				--ip 172.20.0.7 \
 				--name seed-data \
 				-d \
-				seed-data:latest
-
-
-# Starting the containers
-start: start-vote start-db start-redis start-worker start-result
-
-start-vote:
-		docker start vote
-
-start-db:
-		docker start db
-
-start-redis:
-		docker start redis
-
-start-worker:
-		docker start worker
-
-start-result:
-		docker start result
+				samlotus/virtu-seed-data:cmd
 
 stop:
 		docker stop db redis result vote worker
 
+cleanup:
+		docker rm -f vote db redis seed-data result worker || true
+		docker volume rm db-data || true
+		docker network rm cats-or-dogs-network || true
