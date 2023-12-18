@@ -2,8 +2,7 @@ CWD := $(shell pwd)
 
 .PHONY: pre-run build start run
 
-# Pre-Run
-all: create-volumes create-networks build 
+all: create-volumes create-networks build run
 
 create-networks:
 		docker network create --driver=bridge cats-or-dogs-network --subnet=172.20.0.0/24 || true
